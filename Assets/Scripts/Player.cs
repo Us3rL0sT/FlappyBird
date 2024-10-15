@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SocialPlatforms.Impl;
 
 public class Player : MonoBehaviour
 {
@@ -12,9 +13,18 @@ public class Player : MonoBehaviour
     public float gravity = -9.8f;
     public float strength = 5f;
 
+    private int score = 0;
+
+    private AudioSource audioSource;
+    public AudioClip dieSound; // Звук получения очков
+    public AudioClip scoringSound; // Звук получения очков
+
+
+
     private void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>(); // получаем spriterenderer для объекта к которому прикреплен скрипт
+        audioSource = GetComponent<AudioSource>(); // Получаем AudioSource
     }
 
     private void Start() // вызывается в первом кадре когда объект включен
@@ -32,9 +42,15 @@ public class Player : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0))
+        if (Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1))
         {
             direction = Vector3.up * strength;
+
+            // Воспроизводим звук прыжка
+            if (audioSource != null)
+            {
+                audioSource.Play(); // Воспроизводим звук
+            }
         }
 
         if (Input.touchCount > 0)
@@ -43,13 +59,19 @@ public class Player : MonoBehaviour
 
             if (touch.phase == TouchPhase.Began)
             {
-
+                // Воспроизводим звук при нажатии на экран
+                direction = Vector3.up * strength;
+                if (audioSource != null)
+                {
+                    audioSource.Play(); // Воспроизводим звук
+                }
             }
         }
 
         direction.y += gravity * Time.deltaTime;
         transform.position += direction * Time.deltaTime;
     }
+
 
     private void AnimateSprite()
     {
@@ -67,11 +89,32 @@ public class Player : MonoBehaviour
     {
         if (other.gameObject.tag == "Obstacle")
         {
-            FindObjectOfType<GameManager>().GameOver(); // плохая функция, так как использует много ресурсов. можно использовать в простой игре, ищет элементы по тегу.
+            FindObjectOfType<GameManager>().GameOver();
+            score = 0;
+            if (dieSound != null && audioSource != null)
+            {
+                audioSource.PlayOneShot(dieSound); // Воспроизводим звук при получении очков
+            }
         }
         else if (other.gameObject.tag == "Scoring")
         {
             FindObjectOfType<GameManager>().IncreaseScore();
+
+            score++;
+            // Воспроизводим звук получения очков
+            if (scoringSound != null && audioSource != null && score % 5 == 0)
+            {
+                audioSource.PlayOneShot(scoringSound); // Воспроизводим звук при получении очков
+            }
         }
     }
+
+    public void SetSoundState(bool isSoundOn)
+    {
+        if (audioSource != null)
+        {
+            audioSource.mute = !isSoundOn; // Устанавливаем mute в зависимости от состояния звука
+        }
+    }
+
 }
